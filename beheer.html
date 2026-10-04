@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<title>Beheer · Babart Bib</title>
+
+<style>
+body{
+  font-family:Arial,sans-serif;
+  background:#f7f1e7;
+  margin:0;
+  color:#342b24
+}
+
+header{
+  background:#5b4636;
+  color:white;
+  padding:28px 20px;
+  text-align:center
+}
+
+main{
+  max-width:850px;
+  margin:25px auto;
+  padding:0 18px
+}
+
+.card{
+  background:white;
+  border-radius:18px;
+  padding:22px;
+  margin:18px 0;
+  box-shadow:0 3px 12px #0001
+}
+
+h1{margin:0 0 5px}
+h2{margin-top:0}
+
+label{
+  display:block;
+  margin-top:15px;
+  margin-bottom:6px;
+  font-weight:bold
+}
+
+select{
+  width:100%;
+  padding:12px;
+  border:1px solid #ccc;
+  border-radius:10px;
+  font-size:16px;
+  background:white
+}
+
+button{
+  border:0;
+  border-radius:10px;
+  padding:12px 18px;
+  font-size:16px;
+  cursor:pointer;
+  background:#5b4636;
+  color:white;
+  margin-top:18px
+}
+
+button:hover{
+  opacity:.9
+}
+
+.loan{
+  padding:15px;
+  background:#f2eadf;
+  border-radius:12px;
+  margin:10px 0
+}
+
+.loan strong{
+  display:block;
+  margin-bottom:5px
+}
+
+.return{
+  background:#766b62;
+  margin-top:8px
+}
+
+.message{
+  padding:12px;
+  background:#ead8bd;
+  border-radius:10px;
+  margin-top:15px;
+  display:none
+}
+
+.empty{
+  padding:16px;
+  background:#f2eadf;
+  border-radius:12px
+}
+
+.small{
+  color:#766b62;
+  font-size:14px
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://ovobqdnicspsfyaiviyn.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_6nPSeezGPGAN91ebnh1fjQ_kq49ch6z";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
+
+</head>
+
+<body>
+
+<header>
+  <h1>📚 Babart Bib</h1>
+  <div>Beheer · Bibliothecaris: Aria</div>
+</header>
+
+<main>
+
+<section class="card">
+
+  <h2>Nieuw uitlenen</h2>
+
+  <p class="small">
+    Kies wie iets leent en welk boek of spel.
+  </p>
+
+  <label for="lid">Lid</label>
+
+  <select id="lid">
+    <option value="Líor">Líor · 6 jaar</option>
+    <option value="Nolan">Nolan · 3 jaar</option>
+  </select>
+
+  <label for="boek">Boek of spel</label>
+
+  <select id="boek">
+
+    <optgroup label="Boeken">
+      <option>📖 De Lekkerbekjes</option>
+      <option>📖 Sprookjesboek</option>
+      <option>📖 Wereldatlas</option>
+      <option>📖 Op de boerderij</option>
+      <option>📖 Kunst voor kleintjes</option>
+      <option>📖 Het feestje van Femke</option>
+      <option>📖 Het egeltje trekt eropuit</option>
+      <option>📖 Koning Eland</option>
+      <option>📖 Eend zegt miauw</option>
+      <option>📖 La ciudad</option>
+      <option>📖 Slaap lekker, Peppa</option>
+      <option>📖 De trage superheld</option>
+      <option>📖 Huisdieren</option>
+      <option>📖 Groot slaaptijd vertelboek</option>
+      <option>📖 Geluiden in het bos</option>
+      <option>📖 Plop dokter Kwebbel</option>
+      <option>📖 Plop touwtrekken</option>
+      <option>📖 Knutselfeest voor kinderen</option>
+      <option>📖 Schud eens aan de appelboom</option>
+      <option>📖 Floor, Otto en Titus</option>
+      <option>📖 De mysterieuze mummie</option>
+      <option>📖 Het huis van Nijntje</option>
+      <option>📖 Buscando a Nemo — libro y CD</option>
+    </optgroup>
+
+    <optgroup label="Spellen">
+      <option>🎲 Harry Potter Dobbel</option>
+      <option>🎲 Cortex Challenge</option>
+      <option>🎲 Skyjo</option>
+      <option>🎲 Memorin Animales</option>
+      <option>🎲 Spidey Search &amp; Find</option>
+      <option>🎲 Pilo</option>
+      <option>🎲 TikTak Magneten</option>
+      <option>🎲 Catan Junior</option>
+      <option>🎲 Harry Potter Labyrint</option>
+      <option>🎲 Mijn eerste spelletjesdoos</option>
+    </optgroup>
+
+  </select>
+
+  <button onclick="uitlenen()">Uitlenen</button>
+
+  <div id="melding" class="message"></div>
+
+</section>
+
+<section class="card">
+
+  <h2>Huidige uitleningen</h2>
+
+  <div id="lijst">
+    <div class="empty">
+      Uitleningen worden geladen...
+    </div>
+  </div>
+
+</section>
+
+</main>
+
+<script>
+
+async function laadUitleningen(){
+
+  const lijst = document.getElementById("lijst");
+
+  const { data, error } = await supabase
+    .from("uitleningen")
+    .select("id, boek, lid, uitgeleend_op")
+    .order("uitgeleend_op", { ascending:false });
+
+  if(error){
+
+    console.error(error);
+
+    lijst.innerHTML =
+      '<div class="empty">De uitleningen konden niet worden geladen.</div>';
+
+    return;
+  }
+
+  if(!data || data.length === 0){
+
+    lijst.innerHTML =
+      '<div class="empty">Er zijn momenteel geen uitleningen.</div>';
+
+    return;
+  }
+
+  lijst.innerHTML = "";
+
+  data.forEach(item => {
+
+    const vak = document.createElement("div");
+
+    vak.className = "loan";
+
+    const naam = document.createElement("strong");
+    naam.textContent = item.boek;
+
+    const lid = document.createElement("div");
+    lid.textContent = "Geleend door: " + item.lid;
+
+    const datum = document.createElement("div");
+    datum.className = "small";
+
+    const datumObject = new Date(item.uitgeleend_op);
+
+    datum.textContent =
+      "Uitgeleend op: " +
+      datumObject.toLocaleDateString("nl-BE");
+
+    const knop = document.createElement("button");
+
+    knop.className = "return";
+    knop.textContent = "Teruggebracht";
+
+    knop.onclick = function(){
+      terugbrengen(item.id);
+    };
+
+    vak.appendChild(naam);
+    vak.appendChild(lid);
+    vak.appendChild(datum);
+    vak.appendChild(knop);
+
+    lijst.appendChild(vak);
+
+  });
+}
+
+
+async function uitlenen(){
+
+  const lid = document.getElementById("lid").value;
+  const boek = document.getElementById("boek").value;
+  const melding = document.getElementById("melding");
+
+  melding.style.display = "none";
+
+  const { data: bestaand, error: controleFout } = await supabase
+    .from("uitleningen")
+    .select("id, lid")
+    .eq("boek", boek)
+    .limit(1);
+
+  if(controleFout){
+
+    console.error(controleFout);
+
+    melding.textContent =
+      "Er ging iets mis bij het controleren van dit boek.";
+
+    melding.style.display = "block";
+
+    return;
+  }
+
+  if(bestaand && bestaand.length > 0){
+
+    melding.textContent =
+      "Dit boek of spel is al uitgeleend aan " + bestaand[0].lid + ".";
+
+    melding.style.display = "block";
+
+    return;
+  }
+
+  const { error } = await supabase
+    .from("uitleningen")
+    .insert([
+      {
+        boek: boek,
+        lid: lid
+      }
+    ]);
+
+  if(error){
+
+    console.error(error);
+
+    melding.textContent =
+      "De uitlening kon niet worden opgeslagen.";
+
+    melding.style.display = "block";
+
+    return;
+  }
+
+  melding.textContent =
+    boek + " is uitgeleend aan " + lid + ".";
+
+  melding.style.display = "block";
+
+  laadUitleningen();
+}
+
+
+async function terugbrengen(id){
+
+  const bevestiging = confirm(
+    "Weet je zeker dat dit item is teruggebracht?"
+  );
+
+  if(!bevestiging){
+    return;
+  }
+
+  const { error } = await supabase
+    .from("uitleningen")
+    .delete()
+    .eq("id", id);
+
+  if(error){
+
+    console.error(error);
+
+    alert("Het item kon niet als teruggebracht worden gemarkeerd.");
+
+    return;
+  }
+
+  laadUitleningen();
+}
+
+
+laadUitleningen();
+
+</script>
+
+</body>
+</html>
