@@ -1,4 +1,3 @@
-```html
 <!doctype html>
 <html lang="nl">
 <head>
@@ -40,7 +39,9 @@ h1{margin:0 0 5px}
 h2{margin-top:0}
 li{margin:8px 0}
 
-.muted{color:#766b62}
+.muted{
+  color:#766b62
+}
 
 .empty{
   padding:16px;
@@ -55,6 +56,20 @@ li{margin:8px 0}
   border-radius:999px
 }
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://ovobqdnicspsfyaiviyn.supabase.co";
+
+const SUPABASE_KEY = "sb_publishable_6nPSeezGPGAN91ebnh1fjQ_kq49ch6z";
+
+const supabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+</script>
+
 </head>
 
 <body>
@@ -76,15 +91,16 @@ li{margin:8px 0}
     Dit zijn de boeken en spellen die Líor momenteel geleend heeft.
   </p>
 
-  <!-- HIER KUN JE UITLENINGEN TOEVOEGEN -->
-  <ul>
-    <li>📖 Sprookjesboek</li>
-    <li>🎲 Skyjo</li>
-  </ul>
+  <div id="uitleningen">
+    <div class="empty">
+      Uitleningen worden geladen...
+    </div>
+  </div>
 
 </section>
 
 <section class="card">
+
   <h2>Boeken</h2>
 
   <ul>
@@ -103,11 +119,20 @@ li{margin:8px 0}
     <li>📖 Huisdieren</li>
     <li>📖 Groot slaaptijd vertelboek</li>
     <li>📖 Geluiden in het bos</li>
+    <li>📖 Plop dokter Kwebbel</li>
+    <li>📖 Plop touwtrekken</li>
+    <li>📖 Knutselfeest voor kinderen</li>
+    <li>📖 Schud eens aan de appelboom</li>
+    <li>📖 Floor, Otto en Titus</li>
+    <li>📖 De mysterieuze mummie</li>
+    <li>📖 Het huis van Nijntje</li>
+    <li>📖 Buscando a Nemo — libro y CD</li>
   </ul>
 
 </section>
 
 <section class="card">
+
   <h2>Spellen</h2>
 
   <ul>
@@ -126,6 +151,55 @@ li{margin:8px 0}
 </section>
 
 </main>
+
+<script>
+async function laadUitleningen(){
+
+  const vak = document.getElementById("uitleningen");
+
+  const { data, error } = await supabase
+    .from("uitleningen")
+    .select("id, boek, uitgeleend_op")
+    .eq("lid", "Líor")
+    .order("uitgeleend_op", { ascending:false });
+
+  if(error){
+
+    console.error(error);
+
+    vak.innerHTML =
+      '<div class="empty">De uitleningen konden niet worden geladen.</div>';
+
+    return;
+  }
+
+  if(!data || data.length === 0){
+
+    vak.innerHTML =
+      '<div class="empty">Líor heeft momenteel niets geleend.</div>';
+
+    return;
+  }
+
+  const lijst = document.createElement("ul");
+
+  data.forEach(item => {
+
+    const li = document.createElement("li");
+
+    li.textContent = item.boek;
+
+    lijst.appendChild(li);
+
+  });
+
+  vak.innerHTML = "";
+
+  vak.appendChild(lijst);
+}
+
+laadUitleningen();
+</script>
 
 </body>
 </html>
